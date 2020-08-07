@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <h1>Hello, {{ user.username }}!</h1>
+        <ul>
+           {% for term in terms %}
+           <li>{{ term.term }}</li>
+           {% endfor %}
+        </ul>
+    </body>
+</html>
