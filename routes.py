@@ -83,7 +83,7 @@ def update(term):
         {"_id": ObjectId(term['_id'])}, 
         {"$set": {
             "term": term['term'], "desc": term['desc'], "tags": term['tags'],
-            "categories": term['categories']
+            "categories": term['categories'], "resume": term['resume']
             }}
         )
     return res
