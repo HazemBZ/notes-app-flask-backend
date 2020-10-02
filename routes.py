@@ -9,11 +9,12 @@ from pymongo.results import InsertManyResult
 from pymongo.results import DeleteResult
 from pymongo.collection import Collection
 from typing import List
+from markdown import markdown
 
 con = MongoHandler.init_cred("localhost", 27000, "notes_db_owner", "notes_db_owner", "admin")
 notes = con.get_database("notes")
 terms_collection:Collection = con.get_collection("terms")
-
+MARKDOWN_EXTENSIONS = ['attr_list', 'fenced_code']
 
 app = Flask(__name__, template_folder="templates")
 cors = CORS(app)    
@@ -28,8 +29,8 @@ def adapt(x):
 def getTerm(id):
     return adapt(terms_collection.find_one({"_id": ObjectId(id)}))
 
-def getTerms(nbr=10):
-    nbr = nbr if nbr<10 else 10
+def getTerms(nbr=50):
+    nbr = nbr if nbr<50 else 50
     pipeline = [
         # {"$project": {"_id":1}},
         {"$limit": nbr}
@@ -41,7 +42,7 @@ def getTermsLike(term):
     pipeline = [
         {
             "$match": 
-                {"term":{"$regex": ".*%s.*" % term}}
+                {"term":{"$regex": ".*%s.*/i" % term}}
         },
         # {
         #     "$project": {"_id":0}
@@ -55,7 +56,23 @@ def getTermsLike(term):
     terms = map(adapt, res)
     return list(terms)
 
+def getTermsByCategories(categories):
+    pipeline = [
+        {
+            "$match": {
+                "categories": {"$all": categories} 
+                }
+            }
+    ]
+    res = [] 
+    try:
+        res = terms_collection.aggregate(pipeline) 
+    except Exception as e:
+        print(e)
+    terms = map(adapt, res)
+    return list(terms)
 
+    
 def insertTerms(terms)->InsertManyResult:
     res = terms_collection.insert_many(terms)
     return res
@@ -64,7 +81,10 @@ def update(term):
     # print(term['tags'])
     res = terms_collection.update_one(
         {"_id": ObjectId(term['_id'])}, 
-        {"$set": {"term": term['term'], "desc": term['desc'], "tags": term['tags']}}
+        {"$set": {
+            "term": term['term'], "desc": term['desc'], "tags": term['tags'],
+            "categories": term['categories']
+            }}
         )
     return res
 
@@ -83,6 +103,9 @@ def index():
 def terms():
     if request.args.get("term"):
         return jsonify(getTermsLike(request.args.get("term")))
+    elif request.args.get("categories"):
+        print(request.args.get("categories")) 
+        return jsonify(getTermsByCategories(request.args.get("categories").split(' ')));
     return jsonify(getTerms())
 
 @app.route('/term')
@@ -108,11 +131,21 @@ def addTerms():
 
 @app.route('/term/delete/<term_id>', methods=["delete"])
 def deleteTerm(term_id):
-    print("DeleteTrem:%s" %term_id)
+    print("DeleteTerm:%s" %term_id)
     resp = terms_collection.delete_one({"_id": ObjectId(term_id)})
     return jsonify(resp.raw_result)
 
 @app.route('/term/patch', methods=["PATCH"])
 def updateTerm():
+    print(request.json)
     res = update(request.json)
     return jsonify(res.raw_result)
+
+@app.route('/markdown/html', methods=['POST'])
+def mardown_to_html():
+    print(request.json)
+    mark = request.json[0]
+    print(mark)
+    return jsonify({
+        "parse_result": markdown(mark, extensions=MARKDOWN_EXTENSIONS),
+    })
