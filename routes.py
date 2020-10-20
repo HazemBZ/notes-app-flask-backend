@@ -11,7 +11,7 @@ from pymongo.collection import Collection
 from typing import List
 from markdown import markdown
 
-con = MongoHandler.init_cred("localhost", 27000, "notes_db_owner", "notes_db_owner", "admin")
+con = MongoHandler.init_std("localhost", 27000)
 notes = con.get_database("notes")
 terms_collection:Collection = con.get_collection("terms")
 MARKDOWN_EXTENSIONS = ['attr_list', 'fenced_code']
