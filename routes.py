@@ -18,7 +18,7 @@ terms_collection:Collection = con.get_collection("terms")
 MARKDOWN_EXTENSIONS = ['attr_list', 'fenced_code']
 
 app = Flask(__name__, template_folder="templates")
-cors = CORS(app)    
+cors = CORS(app)
 
 
 #--------BACKEND
@@ -44,20 +44,20 @@ def getTerms(nbr=50):
 def getTermsLike(term):
     pipeline = [
         {
-            "$match": 
+            "$match":
                 {"term":{'$regex': re.compile(r".*%s.*(?i)" % term)}},
-                
-           
+
+
         },
-       
+
          {
              "$project": {"_id":0}
-         } 
+         }
         ]
     print(pipeline)
-    res = [] 
+    res = []
     try:
-        res = terms_collection.aggregate(pipeline) 
+        res = terms_collection.aggregate(pipeline)
     except Exception as e:
         print(e)
     print("res", res)
@@ -94,19 +94,19 @@ def getTermsByCategories(categories):
     pipeline = [
         {
             "$match": {
-                "categories": {"$all": categories} 
+                "categories": {"$all": categories}
                 }
             }
     ]
-    res = [] 
+    res = []
     try:
-        res = terms_collection.aggregate(pipeline) 
+        res = terms_collection.aggregate(pipeline)
     except Exception as e:
         print(e)
     terms = map(adapt, res)
     return list(terms)
 
-    
+
 def insertTerms(terms)->InsertManyResult:
     res = terms_collection.insert_many(terms)
     return res
@@ -114,7 +114,7 @@ def insertTerms(terms)->InsertManyResult:
 def update(term):
     # print(term['tags'])
     res = terms_collection.update_one(
-        {"_id": ObjectId(term['_id'])}, 
+        {"_id": ObjectId(term['_id'])},
         {"$set": {
             "term": term['term'], "desc": term['desc'], "tags": term['tags'],
             "categories": term['categories'], "resume": term['resume']
@@ -137,11 +137,11 @@ def index():
 def terms():
     if request.args.get("term"):
         if request.args.get("resume"):
-           print("hit resume param") 
+           print("hit resume param")
            return jsonify(getTermsLikeOnly(request.args.get("term")))
         return jsonify(getTermsLike(request.args.get("term")))
     elif request.args.get("categories"):
-        print(request.args.get("categories")) 
+        print(request.args.get("categories"))
         return jsonify(getTermsByCategories(request.args.get("categories").split(' ')));
     return jsonify(getTerms())
 
@@ -162,7 +162,7 @@ def addTerms():
     print(request.json)
     res = insertTerms(request.json)
     return jsonify({
-        "aknowledged":res.acknowledged, 
+        "aknowledged":res.acknowledged,
         "inserted_ids":list(map(lambda x: str(x), res.inserted_ids))
         })
 
@@ -182,6 +182,8 @@ def updateTerm():
 def mardown_to_html():
     print(request.json)
     mark = request.json[0]
+    if not mark:
+      mark = ""
     print(mark)
     return jsonify({
         "parse_result": markdown(mark, extensions=MARKDOWN_EXTENSIONS),
