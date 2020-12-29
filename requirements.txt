@@ -2,4 +2,4 @@ Flask
 Flask-Cors
 pymongo
 Markdown
-
+python-dotenv
