@@ -1,2 +1,1 @@
-echo "running flask server"
-export FLASK_APP=routes.py
+FLASK_APP=routes.py

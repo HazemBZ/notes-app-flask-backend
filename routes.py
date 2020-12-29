@@ -10,8 +10,9 @@ from pymongo.results import DeleteResult
 from pymongo.collection import Collection
 from typing import List
 from markdown import markdown
+import re
 
-con = MongoHandler.init_std("localhost", 27000)
+con = MongoHandler.init_std("localhost", 27017)
 notes = con.get_database("notes")
 terms_collection:Collection = con.get_collection("terms")
 MARKDOWN_EXTENSIONS = ['attr_list', 'fenced_code']
@@ -23,7 +24,8 @@ cors = CORS(app)
 #--------BACKEND
 
 def adapt(x):
-    x['_id'] = str(x["_id"])
+    if x.get('_id'):
+        x['_id'] = str(x["_id"])
     return x
 
 def getTerm(id):
@@ -33,7 +35,8 @@ def getTerms(nbr=50):
     nbr = nbr if nbr<50 else 50
     pipeline = [
         # {"$project": {"_id":1}},
-        {"$limit": nbr}
+        {"$limit": nbr},
+
     ]
     terms = map(adapt, terms_collection.aggregate(pipeline))
     return list(terms)
@@ -42,19 +45,50 @@ def getTermsLike(term):
     pipeline = [
         {
             "$match": 
-                {"term":{"$regex": ".*%s.*/i" % term}}
+                {"term":{'$regex': re.compile(r".*%s.*(?i)" % term)}},
+                
+           
         },
-        # {
-        #     "$project": {"_id":0}
-        # } 
+       
+         {
+             "$project": {"_id":0}
+         } 
         ]
+    print(pipeline)
     res = [] 
     try:
         res = terms_collection.aggregate(pipeline) 
     except Exception as e:
         print(e)
+    print("res", res)
     terms = map(adapt, res)
+    print("terms", terms)
     return list(terms)
+
+def getTermsLikeOnly(term):
+    pipeline = [
+        {
+            "$match":
+                {"term":{'$regex': re.compile(r".*%s.*(?i)" % term)}},
+
+
+        },
+
+         {
+             "$project": {"term":1, "resume":1, "_id":0}
+         }
+        ]
+    #print(pipeline)
+    res = []
+    try:
+        res = terms_collection.aggregate(pipeline)
+    except Exception as e:
+        print(e)
+    #print("res", res)
+    terms = map(adapt, res)
+    #print("terms", terms)
+    return list(terms)
+
 
 def getTermsByCategories(categories):
     pipeline = [
@@ -102,6 +136,9 @@ def index():
 @app.route('/terms', methods=["GET"])
 def terms():
     if request.args.get("term"):
+        if request.args.get("resume"):
+           print("hit resume param") 
+           return jsonify(getTermsLikeOnly(request.args.get("term")))
         return jsonify(getTermsLike(request.args.get("term")))
     elif request.args.get("categories"):
         print(request.args.get("categories")) 
