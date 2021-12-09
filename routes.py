@@ -1,6 +1,6 @@
-from flask_app import app
+from b_note_backend import app
 from flask import render_template, jsonify, request # templating uses jinja2
-from flask_app.databases import MongoHandler
+from b_note_backend.databases import MongoHandler
 from flask_cors import CORS
 from flask import Flask
 
@@ -12,7 +12,7 @@ from typing import List
 from markdown import markdown
 import re
 
-con = MongoHandler.init_std("localhost", 27017)
+con = MongoHandler.init_std("localhost", 27000)
 notes = con.get_database("notes")
 terms_collection:Collection = con.get_collection("terms")
 MARKDOWN_EXTENSIONS = ['attr_list', 'fenced_code']
