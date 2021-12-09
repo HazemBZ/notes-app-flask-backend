@@ -4,3 +4,4 @@ data/logs/*
 *.swp
 .run
 *.log
+.python-version
